@@ -1,9 +1,6 @@
-# villager_lite_agent/agent/thought_engine.py
-import os
-import json
-from openai import OpenAI
+# dawnyawn/agent/thought_engine.py
 from pydantic import BaseModel
-from config import llm_config
+from config import get_llm_client, LLM_MODEL_NAME
 from tools.tool_manager import ToolManager
 from models.task_node import TaskNode
 
@@ -17,12 +14,11 @@ class ThoughtEngine:
     """AI Reasoning component. Decides which tool to use for a given task."""
 
     def __init__(self, tool_manager: ToolManager):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = get_llm_client()
         self.tool_manager = tool_manager
         self.system_prompt = f"""
-You are the reasoning core of an autonomous agent. Your task is to select the best tool to accomplish a given task and formulate the precise input for that tool.
-
-You must respond with a JSON object containing two keys: "tool_name" and "tool_input".
+You are the reasoning core of an autonomous agent. Select the best tool and formulate the precise input for it.
+Your response MUST BE ONLY a single, valid JSON object with two keys: "tool_name" and "tool_input".
 
 {self.tool_manager.get_tool_manifest()}
 """
@@ -33,14 +29,12 @@ You must respond with a JSON object containing two keys: "tool_name" and "tool_i
         user_prompt = f"Previous Context:\n{context}\n\nCurrent Task: {task.description}"
 
         response = self.client.chat.completions.create(
-            model=llm_config.THOUGHT_MODEL,
+            model=LLM_MODEL_NAME,
             messages=[
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": user_prompt}
-            ],
-            response_format={"type": "json_object"}
+            ]
         )
-        response_json = response.choices[0].message.content
-        selection = ToolSelection.model_validate_json(response_json)
+        selection = ToolSelection.model_validate_json(response.choices[0].message.content)
         print(f"  > Thought: Use tool '{selection.tool_name}' with input '{selection.tool_input}'")
         return selection

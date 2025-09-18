@@ -1,14 +1,24 @@
-# villager_lite_agent/config.py
-from pydantic import BaseModel
+# dawnyawn/config.py
+import os
+from openai import OpenAI
+from dotenv import load_dotenv
 
-class LLMConfig(BaseModel):
-    PLANNER_MODEL: str = "gpt-4o-mini"
-    THOUGHT_MODEL: str = "gpt-4o-mini"
-    SUMMARIZER_MODEL: str = "gpt-4o-mini"
+load_dotenv()
 
-class ServiceConfig(BaseModel):
-    KALI_DRIVER_URL: str = "http://127.0.0.1:1611/execute" # Port from diagram
+# --- Centralized LLM Client Configuration ---
+def get_llm_client() -> OpenAI:
+    """
+    Initializes and returns an OpenAI client configured for a local LLM server.
+    """
+    return OpenAI(
+        base_url=os.getenv("OLLAMA_BASE_URL"),
+        api_key=os.getenv("OLLAMA_API_KEY"),
+    )
 
-# Global config objects
-llm_config = LLMConfig()
+LLM_MODEL_NAME = os.getenv("LLM_MODEL")
+
+# --- Service Configuration ---
+class ServiceConfig:
+    KALI_DRIVER_URL: str = "http://127.0.0.1:1611/execute"
+
 service_config = ServiceConfig()

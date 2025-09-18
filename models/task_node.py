@@ -1,4 +1,4 @@
-# villager_lite_agent/models/task_node.py
+# dawnyawn/models/task_node.py
 from pydantic import BaseModel, Field
 from typing import Optional
 from enum import Enum
