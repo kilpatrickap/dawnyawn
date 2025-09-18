@@ -49,10 +49,10 @@ class KaliManager:
     def __init__(self):
         try: self._docker_client = docker.from_env(); self._docker_client.ping()
         except Exception as e: print("FATAL ERROR: Could not connect to Docker."); raise e
-    def create_container(self) -> KaliContainer: return KaliContainer(owner=self)```
+    def create_container(self) -> KaliContainer: return KaliContainer(owner=self)
 
 #### **`kali_execution_server/kali_server.py`**
-```python
+
 # kali_execution_server/kali_server.py
 import uvicorn, traceback
 from fastapi import FastAPI, HTTPException
