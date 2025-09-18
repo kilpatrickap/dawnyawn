@@ -17,6 +17,10 @@ def get_llm_client() -> OpenAI:
 
 LLM_MODEL_NAME = os.getenv("LLM_MODEL")
 
+# --- NEW PERFORMANCE SETTINGS ---
+# Timeout for all LLM requests in seconds
+LLM_REQUEST_TIMEOUT = 60.0
+
 # --- Service Configuration ---
 class ServiceConfig:
     KALI_DRIVER_URL: str = "http://127.0.0.1:1611/execute"

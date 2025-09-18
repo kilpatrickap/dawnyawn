@@ -2,7 +2,7 @@
 import re
 from typing import List
 from pydantic import BaseModel, Field
-from config import get_llm_client, LLM_MODEL_NAME
+from config import get_llm_client, LLM_MODEL_NAME, LLM_REQUEST_TIMEOUT
 from models.task_node import TaskNode
 
 
@@ -11,10 +11,8 @@ class Plan(BaseModel):
 
 
 def _clean_json_response(response_str: str) -> str:
-    """Finds and extracts the JSON object from a string."""
     match = re.search(r'\{.*\}', response_str, re.DOTALL)
-    if match:
-        return match.group(0)
+    if match: return match.group(0)
     return response_str
 
 
@@ -23,17 +21,21 @@ class AgentScheduler:
 
     def __init__(self):
         self.client = get_llm_client()
-        # --- THIS IS THE MODIFIED PROMPT ---
+        # --- THIS IS THE FINAL, IMPROVED PROMPT ---
         self.system_prompt = """
-You are a master planner for an autonomous agent. Decompose the user's goal into a sequence of simple, actionable steps.
+You are a master planner. Your job is to convert a user's goal into a direct, simple, and effective command-line plan.
 
 **Crucial Rules for Planning:**
-1. The agent is in a **stateless environment**. Each step/command runs in a brand new, clean container.
-2. **DO NOT** plan steps that rely on previous state (e.g., 'cd', 'git clone', installing software, saving files).
-3. Keep the plan as short and direct as possible. If the goal can be done in one step, create a one-step plan.
+1.  **Think in high-level tools, not low-level concepts.** Do not break actions down into abstract steps like "send a packet."
+2.  **Create a plan that directly reflects the user's request.** If the user asks to "ping a host," the plan should have one step: "Ping the host to check connectivity."
+3.  **The agent is stateless.** Do not plan steps that rely on previous state (like 'cd' or saving files).
+4.  Keep the plan as short and direct as possible.
 
-Your response MUST BE ONLY a single, valid JSON object that conforms to the following Pydantic model:
-{"tasks": ["list of task descriptions..."]}
+Example:
+User Goal: "Perform a brief ping on www.google.com."
+Correct Plan: {"tasks": ["Ping www.google.com to check for connectivity."]}
+
+Your response MUST BE ONLY a single, valid JSON object that conforms to the Pydantic model.
 """
 
     def create_plan(self, goal: str) -> List[TaskNode]:
@@ -43,7 +45,8 @@ Your response MUST BE ONLY a single, valid JSON object that conforms to the foll
             messages=[
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": f"Goal: {goal}"}
-            ]
+            ],
+            timeout=LLM_REQUEST_TIMEOUT
         )
         raw_response = response.choices[0].message.content
         cleaned_response = _clean_json_response(raw_response)

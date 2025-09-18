@@ -1,5 +1,5 @@
 python kali_server.py
 
-python main.py "Perform a security scan on scanme.nmap.org to detect service versions."
+python main.py "Perform a brief ping on www.google.com."
 
-python main.py "Run a service version scan with nmap on www.pentest-ground.com"
+python main.py "Run a service scan with only nmap on www.pentest-ground.com and dont docker or curl"

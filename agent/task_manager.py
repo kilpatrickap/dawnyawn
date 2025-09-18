@@ -1,6 +1,6 @@
 # dawnyawn/agent/task_manager.py
 from typing import List
-from config import get_llm_client, LLM_MODEL_NAME
+from config import get_llm_client, LLM_MODEL_NAME, LLM_REQUEST_TIMEOUT
 from models.task_node import TaskNode, TaskStatus
 from agent.agent_scheduler import AgentScheduler
 from agent.thought_engine import ThoughtEngine
@@ -28,8 +28,8 @@ class TaskManager:
         print("\n📝 Plan Created:")
         for task in self.plan: print(f"  - Step {task.task_id}: {task.description}")
 
-        confirm = input("\nProceed with execution? (y/n): ")
-        if confirm.lower() != 'y': print("Mission aborted."); return
+        # confirm = input("\nProceed with execution? (y/n): ")
+        # if confirm.lower() != 'y': print("Mission aborted."); return
 
         for task in self.plan:
             task.status = TaskStatus.RUNNING
@@ -59,7 +59,8 @@ class TaskManager:
         response = self.summarizer_client.chat.completions.create(
             model=LLM_MODEL_NAME,
             messages=[{"role": "system", "content": "You are a concise analysis assistant."},
-                      {"role": "user", "content": prompt}]
+                      {"role": "user", "content": prompt}],
+            timeout=LLM_REQUEST_TIMEOUT
         )
         return response.choices[0].message.content.strip()
 
