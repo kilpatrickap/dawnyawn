@@ -1,4 +1,5 @@
-# dawnyawn/agent/thought_engine.py
+# dawnyawn/agent/thought_engine.py (CORRECTED)
+import re
 from pydantic import BaseModel
 from config import get_llm_client, LLM_MODEL_NAME
 from tools.tool_manager import ToolManager
@@ -8,6 +9,19 @@ from models.task_node import TaskNode
 class ToolSelection(BaseModel):
     tool_name: str
     tool_input: str
+
+
+def _clean_json_response(response_str: str) -> str:
+    """
+    Finds and extracts the JSON object from a string that might be wrapped
+    in Markdown code blocks or have other text.
+    """
+    # Use regex to find the JSON blob, even with markdown backticks
+    match = re.search(r'\{.*\}', response_str, re.DOTALL)
+    if match:
+        return match.group(0)
+    # Fallback if no JSON object is found
+    return response_str
 
 
 class ThoughtEngine:
@@ -35,6 +49,11 @@ Your response MUST BE ONLY a single, valid JSON object with two keys: "tool_name
                 {"role": "user", "content": user_prompt}
             ]
         )
-        selection = ToolSelection.model_validate_json(response.choices[0].message.content)
+        raw_response = response.choices[0].message.content
+
+        # ** ADDED CLEANING STEP **
+        cleaned_response = _clean_json_response(raw_response)
+
+        selection = ToolSelection.model_validate_json(cleaned_response)
         print(f"  > Thought: Use tool '{selection.tool_name}' with input '{selection.tool_input}'")
         return selection
