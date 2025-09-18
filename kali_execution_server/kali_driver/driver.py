@@ -57,7 +57,7 @@ class KaliManager:
 import uvicorn, traceback
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from kali_driver.driver import KaliManager
+from al1s.drivers.kali.driver import KaliManager
 
 app = FastAPI(title="Villager-Lite Execution Server")
 print("Initializing Kali Docker Manager...")
