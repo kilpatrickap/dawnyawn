@@ -11,10 +11,7 @@ class Plan(BaseModel):
 
 
 def _clean_json_response(response_str: str) -> str:
-    """
-    Finds and extracts the JSON object from a string that might be wrapped
-    in Markdown code blocks or have other text.
-    """
+    """Finds and extracts the JSON object from a string."""
     match = re.search(r'\{.*\}', response_str, re.DOTALL)
     if match:
         return match.group(0)
@@ -26,11 +23,17 @@ class AgentScheduler:
 
     def __init__(self):
         self.client = get_llm_client()
+        # --- THIS IS THE MODIFIED PROMPT ---
         self.system_prompt = """
-You are a master planner. Decompose the user's goal into a sequence of simple, actionable steps.
+You are a master planner for an autonomous agent. Decompose the user's goal into a sequence of simple, actionable steps.
+
+**Crucial Rules for Planning:**
+1. The agent is in a **stateless environment**. Each step/command runs in a brand new, clean container.
+2. **DO NOT** plan steps that rely on previous state (e.g., 'cd', 'git clone', installing software, saving files).
+3. Keep the plan as short and direct as possible. If the goal can be done in one step, create a one-step plan.
+
 Your response MUST BE ONLY a single, valid JSON object that conforms to the following Pydantic model:
 {"tasks": ["list of task descriptions..."]}
-Do not include any other text, preambles, or explanations.
 """
 
     def create_plan(self, goal: str) -> List[TaskNode]:
@@ -43,8 +46,6 @@ Do not include any other text, preambles, or explanations.
             ]
         )
         raw_response = response.choices[0].message.content
-
-        # ** ADDED CLEANING STEP **
         cleaned_response = _clean_json_response(raw_response)
 
         plan_data = Plan.model_validate_json(cleaned_response)

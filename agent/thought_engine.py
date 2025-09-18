@@ -16,11 +16,9 @@ def _clean_json_response(response_str: str) -> str:
     Finds and extracts the JSON object from a string that might be wrapped
     in Markdown code blocks or have other text.
     """
-    # Use regex to find the JSON blob, even with markdown backticks
     match = re.search(r'\{.*\}', response_str, re.DOTALL)
     if match:
         return match.group(0)
-    # Fallback if no JSON object is found
     return response_str
 
 
@@ -30,9 +28,16 @@ class ThoughtEngine:
     def __init__(self, tool_manager: ToolManager):
         self.client = get_llm_client()
         self.tool_manager = tool_manager
+        # --- THIS IS THE MODIFIED PROMPT ---
         self.system_prompt = f"""
-You are the reasoning core of an autonomous agent. Select the best tool and formulate the precise input for it.
+You are the reasoning core of an autonomous agent. Select the best tool and formulate the precise input for that tool.
 Your response MUST BE ONLY a single, valid JSON object with two keys: "tool_name" and "tool_input".
+
+**Crucial Rules for Command Generation:**
+1. You are in a stateless environment. Each command runs in a new, clean container. Do NOT try to navigate the filesystem with 'cd' as the state will not be saved for the next command.
+2. All tools (like nmap, whois, dig) are pre-installed and available in the system PATH. You can and should call them directly.
+3. Therefore, you MUST NOT prefix commands with './'. For example, use 'nmap -sV target.com', not './nmap -sV target.com'.
+4. The 'tool_input' you generate must be the complete, single command needed to achieve the task.
 
 {self.tool_manager.get_tool_manifest()}
 """
@@ -50,10 +55,7 @@ Your response MUST BE ONLY a single, valid JSON object with two keys: "tool_name
             ]
         )
         raw_response = response.choices[0].message.content
-
-        # ** ADDED CLEANING STEP **
         cleaned_response = _clean_json_response(raw_response)
-
         selection = ToolSelection.model_validate_json(cleaned_response)
         print(f"  > Thought: Use tool '{selection.tool_name}' with input '{selection.tool_input}'")
         return selection
