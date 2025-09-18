@@ -54,7 +54,7 @@ def execute_task(request: TaskRequest):
         print(f"\n--- [1/2] Received command: '{command_to_run}' ---")
 
         # Part 1: Execution
-        print("  [+] Creating Kali container from 'villager-kali-agent' image...")
+        print("  [+] Creating Kali container from 'dawnyawn-kali-agent' image...")
         uuid_str, container = kali_manager.create_container()
         print(f"  [+] Container '{uuid_str}' created.")
 
