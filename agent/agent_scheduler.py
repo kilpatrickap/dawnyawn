@@ -1,4 +1,4 @@
-# dawnyawn/agent/agent_scheduler.py (CORRECTED)
+# dawnyawn/agent/agent_scheduler.py
 import re
 from typing import List
 from pydantic import BaseModel, Field
@@ -7,7 +7,8 @@ from models.task_node import TaskNode
 
 
 class Plan(BaseModel):
-    tasks: List[str] = Field(..., description="A list of task descriptions that logically sequence to solve the goal.")
+    tasks: List[str] = Field(...,
+                             description="A list of high-level task descriptions that logically sequence to solve the goal.")
 
 
 def _clean_json_response(response_str: str) -> str:
@@ -17,29 +18,28 @@ def _clean_json_response(response_str: str) -> str:
 
 
 class AgentScheduler:
-    """LLM Orchestrator. Creates the high-level plan."""
+    """LLM Orchestrator. Creates the high-level strategic plan for user review."""
 
     def __init__(self):
         self.client = get_llm_client()
-        # --- THIS IS THE FINAL, IMPROVED PROMPT ---
         self.system_prompt = """
-You are a master planner. Your job is to convert a user's goal into a direct, simple, and effective command-line plan.
+You are a master strategist. Your job is to convert a user's goal into a high-level, human-readable plan.
 
 **Crucial Rules for Planning:**
-1.  **Think in high-level tools, not low-level concepts.** Do not break actions down into abstract steps like "send a packet."
-2.  **Create a plan that directly reflects the user's request.** If the user asks to "ping a host," the plan should have one step: "Ping the host to check connectivity."
-3.  **The agent is stateless.** Do not plan steps that rely on previous state (like 'cd' or saving files).
-4.  Keep the plan as short and direct as possible.
+1.  The plan should be a logical sequence of strategic steps.
+2.  Do not include specific commands, only the description of the step (e.g., "Scan the target for open ports").
+3.  The agent is stateless between missions but stateful during a mission. Do not plan steps like 'install software'.
+4.  Keep the plan concise and focused on achieving the main goal.
 
 Example:
-User Goal: "Perform a brief ping on www.google.com."
-Correct Plan: {"tasks": ["Ping www.google.com to check for connectivity."]}
+User Goal: "Find the web server on example.com and see its homepage."
+Correct Plan: {"tasks": ["Scan example.com for open web ports.", "If a web server is found, retrieve the homepage content."]}
 
-Your response MUST BE ONLY a single, valid JSON object that conforms to the Pydantic model.
+Your response MUST BE ONLY a single, valid JSON object.
 """
 
     def create_plan(self, goal: str) -> List[TaskNode]:
-        print(f"🗓️  Scheduling plan for goal: '{goal}'")
+        print(f"🗓️  Generating strategic plan for goal: '{goal}'")
         response = self.client.chat.completions.create(
             model=LLM_MODEL_NAME,
             messages=[
@@ -52,4 +52,5 @@ Your response MUST BE ONLY a single, valid JSON object that conforms to the Pyda
         cleaned_response = _clean_json_response(raw_response)
 
         plan_data = Plan.model_validate_json(cleaned_response)
+        # Create TaskNode objects from the descriptions
         return [TaskNode(task_id=i + 1, description=desc) for i, desc in enumerate(plan_data.tasks)]
