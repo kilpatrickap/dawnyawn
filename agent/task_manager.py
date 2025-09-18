@@ -1,8 +1,7 @@
-# dawnyawn/agent/task_manager.py (Hybrid Version)
+# dawnyawn/agent/task_manager.py (Corrected Hybrid Version)
 from openai import APITimeoutError
 from config import get_llm_client, LLM_MODEL_NAME, LLM_REQUEST_TIMEOUT, MAX_SUMMARY_INPUT_LENGTH
 from models.task_node import TaskNode
-# Import the new scheduler
 from agent.agent_scheduler import AgentScheduler
 from agent.thought_engine import ThoughtEngine
 from tools.tool_manager import ToolManager
@@ -16,7 +15,6 @@ class TaskManager:
     def __init__(self, goal: str):
         self.goal = goal
         self.mission_history = []
-        # Re-introduce the scheduler
         self.scheduler = AgentScheduler()
         self.thought_engine = ThoughtEngine(ToolManager())
         self.event_manager = EventManager()
@@ -29,14 +27,25 @@ class TaskManager:
         # --- PHASE 1: PLANNING & APPROVAL ---
         try:
             plan = self.scheduler.create_plan(self.goal)
+
+            if not plan:
+                print("Mission aborted as no valid plan could be created.")
+                return
+
             print("\n📝 High-Level Plan Created:")
+
+            # --- THIS IS THE MISSING CODE BLOCK ---
+            # It iterates through the plan and prints each step for the user.
             for task in plan:
                 print(f"  - {task.description}")
 
+            # It then asks the user to approve the plan before continuing.
             confirm = input("\nProceed with this plan? (y/n): ")
             if confirm.lower() != 'y':
                 print("Mission aborted by user.")
                 return
+            # --- END OF MISSING CODE BLOCK ---
+
         except (APITimeoutError, KeyboardInterrupt) as e:
             print(f"\nMission aborted during planning: {e}")
             return
@@ -74,7 +83,6 @@ class TaskManager:
             self._generate_final_report()
 
     def _summarize_result(self, command: str, raw_output: str) -> str:
-        # ... (This method is unchanged, but I'll include it for completeness)
         if len(raw_output) > MAX_SUMMARY_INPUT_LENGTH:
             truncated_output = raw_output[:MAX_SUMMARY_INPUT_LENGTH]
         else:
@@ -93,7 +101,6 @@ class TaskManager:
             return "Observation failed: The AI model took too long to summarize the result."
 
     def _generate_final_report(self):
-        # ... (This method is unchanged)
         print("\n\n--- DAWNYAWN HYBRID MISSION REPORT ---")
         print(f"Goal: {self.goal}\n")
         for i, item in enumerate(self.mission_history):
