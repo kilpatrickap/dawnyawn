@@ -23,6 +23,6 @@ LLM_REQUEST_TIMEOUT = 60.0
 
 # --- Service Configuration ---
 class ServiceConfig:
-    KALI_DRIVER_URL: str = "http://127.0.0.1:1611/execute"
+    KALI_DRIVER_URL: str = "http://127.0.0.1:1611"
 
 service_config = ServiceConfig()
