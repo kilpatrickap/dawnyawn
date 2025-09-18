@@ -3,4 +3,3 @@ uvicorn[standard]
 docker
 paramiko
 kali-driver
-kali_driver

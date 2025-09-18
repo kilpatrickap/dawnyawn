@@ -1,5 +1,3 @@
 python kali_server.py
 
-python main.py "Perform a security scan on scanme.nmap.org. First, run a fast port scan to see what's open. Then, run a service version detection scan on the open ports."
-
 python main.py "Perform a security scan on scanme.nmap.org to detect service versions."
