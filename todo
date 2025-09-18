@@ -2,4 +2,4 @@ python kali_server.py
 
 python main.py "Perform a security scan on scanme.nmap.org to detect service versions."
 
-python main.py "Perform nmap -sV www.pentest-ground.com. Updated Nmap is already installed on the kali-image"
+python main.py "run nmap -sV www.pentest-ground.com. Do not pull, update or install on the kali-image"
