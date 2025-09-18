@@ -2,4 +2,4 @@ python kali_server.py
 
 python main.py "Perform a brief ping on www.google.com."
 
-python main.py "Find out what web server is running on www.pentest-ground.com, then create a directory named after the server and save the nmap scan results into a file in that new directory and send it via ssh as a text file back to the LLM."
+python main.py "Find out what web server is running on www.pentest-ground.com."

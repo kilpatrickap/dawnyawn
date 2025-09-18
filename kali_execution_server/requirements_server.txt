@@ -3,3 +3,5 @@ uvicorn[standard]
 docker
 paramiko
 kali-driver
+openai
+python-dotenv
