@@ -11,7 +11,7 @@ import traceback
 # --- Driver Import ---
 # This block correctly finds and imports the KaliManager from your virtual environment.
 try:
-    # We assume this script is in the root 'Villager' directory, and the venv is './.venv'
+    # We assume this script is in the root 'dawnyawn' directory, and the venv is './.venv'
     venv_path = Path(__file__).resolve().parents[1]
     site_packages_path = venv_path / ".venv/lib/python3.13/site-packages"
     sys.path.insert(0, str(site_packages_path.resolve()))
@@ -41,10 +41,10 @@ class TaskRequest(BaseModel):
     prompt: str  # The client will send a JSON with a "prompt" key
 
 
-@app.post("/")
+@app.post("/execute")
 def execute_task(request: TaskRequest):
     """
-    Receives a PRE-CLEANED command from the Villager agent,
+    Receives a PRE-CLEANED command from the dawnyawn agent,
     executes it in a Kali container, and returns the RAW text result.
     """
     container = None
@@ -63,7 +63,7 @@ def execute_task(request: TaskRequest):
         print("--- ✅ [2/2] Execution Complete ---")
 
         # The server's only job is to return the raw result.
-        # The Villager agent's brain will handle summarization.
+        # The dawnyawn agent's brain will handle summarization.
         return {"result": raw_tool_output}
 
     except Exception as e:
