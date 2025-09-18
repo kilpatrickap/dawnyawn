@@ -1,21 +1,9 @@
-# dawnyawn/agent/agent_scheduler.py (Final, Robust Version)
+# dawnyawn/agent/agent_scheduler.py (Simplified Text Version)
 import re
 from typing import List
-from pydantic import BaseModel, Field
-from pydantic_core import ValidationError  # <-- Import the specific error
+from openai import APITimeoutError
 from config import get_llm_client, LLM_MODEL_NAME, LLM_REQUEST_TIMEOUT
 from models.task_node import TaskNode
-
-
-class Plan(BaseModel):
-    tasks: List[str] = Field(...,
-                             description="A list of high-level task descriptions that logically sequence to solve the goal.")
-
-
-def _clean_json_response(response_str: str) -> str:
-    match = re.search(r'\{.*\}', response_str, re.DOTALL)
-    if match: return match.group(0)
-    return response_str
 
 
 class AgentScheduler:
@@ -23,35 +11,54 @@ class AgentScheduler:
 
     def __init__(self):
         self.client = get_llm_client()
+        # --- THIS IS THE NEW, SIMPLIFIED TEXT PROMPT ---
         self.system_prompt = """
-You are a master strategist. Your job is to convert a user's goal into a high-level, human-readable plan.
+You are a master strategist AI. Your job is to convert a user's goal into a simple, numbered list of high-level steps.
+
 **Crucial Rules for Planning:**
-1.  The plan should be a logical sequence of strategic steps.
-2.  Do not include specific commands, only the description of the step (e.g., "Scan the target for open ports").
-3.  The agent is stateless between missions but stateful during a mission. Do not plan steps like 'install software'.
-4.  Keep the plan concise and focused on achieving the main goal.
-Your response MUST BE ONLY a single, valid JSON object.
+1.  Your output MUST be a numbered list, starting with "1.".
+2.  Each item on the list should be a single, clear strategic step.
+3.  Do not include specific commands, only the description of the step.
+4.  Do not add any preamble, conversational text, or closing remarks.
+
+**Example of a PERFECT response:**
+User Goal: "Find the web server on example.com and see its homepage."
+Your Response:
+1. Scan example.com for open web ports to identify the web server.
+2. If a web server is found, retrieve the content of its homepage.
 """
+
+    def _parse_plan_from_text(self, text_plan: str) -> List[str]:
+        """Parses a numbered list from the LLM's text response."""
+        # Find all lines that start with a number followed by a period.
+        steps = re.findall(r'^\s*\d+\.\s*(.*)', text_plan, re.MULTILINE)
+        # Clean up any leading/trailing whitespace from the captured steps.
+        return [step.strip() for step in steps]
 
     def create_plan(self, goal: str) -> List[TaskNode]:
         print(f"🗓️  Generating strategic plan for goal: '{goal}'")
-        response = self.client.chat.completions.create(
-            model=LLM_MODEL_NAME,
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"Goal: {goal}"}
-            ],
-            timeout=LLM_REQUEST_TIMEOUT
-        )
-        raw_response = response.choices[0].message.content
-        cleaned_response = _clean_json_response(raw_response)
-
-        # --- ADDED ERROR HANDLING FOR LLM REFUSALS ---
         try:
-            plan_data = Plan.model_validate_json(cleaned_response)
-            return [TaskNode(task_id=i + 1, description=desc) for i, desc in enumerate(plan_data.tasks)]
-        except ValidationError:
-            print("\n❌ Critical Error: The AI model refused the request or returned an invalid plan.")
-            print(f"   Model's raw response: \"{raw_response}\"")
-            # Return an empty list to signal failure
+            response = self.client.chat.completions.create(
+                model=LLM_MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": f"Goal: {goal}"}
+                ],
+                timeout=LLM_REQUEST_TIMEOUT
+            )
+            raw_text_plan = response.choices[0].message.content.strip()
+
+            # --- PARSE THE TEXT RESPONSE ---
+            task_descriptions = self._parse_plan_from_text(raw_text_plan)
+
+            if not task_descriptions:
+                print("\n❌ Critical Error: The AI model failed to generate a valid, numbered plan.")
+                print(f"   Model's raw response: \"{raw_text_plan}\"")
+                return []
+
+            # Convert the list of strings into a list of TaskNode objects
+            return [TaskNode(task_id=i + 1, description=desc) for i, desc in enumerate(task_descriptions)]
+
+        except APITimeoutError:
+            print("\n❌ Critical Error: The AI model timed out while creating the plan.")
             return []
