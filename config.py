@@ -19,7 +19,7 @@ LLM_MODEL_NAME = os.getenv("LLM_MODEL")
 
 # --- NEW PERFORMANCE SETTINGS ---
 # Timeout for all LLM requests in seconds
-LLM_REQUEST_TIMEOUT = 60.0
+LLM_REQUEST_TIMEOUT = 600.0
 
 # Maximum summary
 MAX_SUMMARY_INPUT_LENGTH = 5000
